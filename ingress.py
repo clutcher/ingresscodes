@@ -78,7 +78,7 @@ if __name__ == '__main__':
     print 'First parse.'
     print 'Waiting for new passcodes...'
 
-    if password = '' or email = '':
+    if password == '' or email == '':
         print 'Enter password!'
         raise SystemExit()
 
