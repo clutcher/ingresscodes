@@ -1,12 +1,28 @@
 #-*- coding: utf-8 -*-
-import urllib
-import urllib2
-import re
-import time
-from splinter import Browser
 
-email = ''
-password = ''
+import re
+import datetime
+import time
+import requests
+
+#ACSID cookie
+acsid = ''
+#csrftoken cookie
+csrftoken = ''
+#Google Key API with G+ ON
+keyAPI = ''
+
+cookie = 'ACSID=' + acsid + ';' + 'csrftoken=' + csrftoken
+
+
+def convertTime(val):
+    if '.' not in val:
+        return datetime.datetime.strptime(val, "%Y-%m-%dT%H:%M:%S")
+
+    nofrag, frag = val.split(".")
+    date = datetime.datetime.strptime(nofrag, "%Y-%m-%dT%H:%M:%S")
+
+    return date
 
 
 def collect(htmlSource):
@@ -24,85 +40,62 @@ def collect(htmlSource):
 
     # Remove passcode with length < 4
     for passOne in passcode:
-        if len(passOne) < 4:
+        if len(passOne) < 7:
             passcode = filter(lambda a: a != passOne, passcode)
 
     return passcode
 
 
-def parseDecodeIngress():
-    "Parse decodeingress.me"
+def parseGooglePlus():
+    "Parse Google+ for heshtags #ingresspasscode and #passcode"
+    www = 'https://www.googleapis.com/plus/v1/activities'
+    fields = 'items(object/content,updated)'
 
-    passcodes = []
+    searchIPS = {'query': '#ingresspasscode', 'fields': fields, 'key': keyAPI}
+    searchPS = {'query': '#passcode', 'fields': fields, 'key': keyAPI}
 
-    www = "http://decodeingress.me/category/code/"
-    try:
-        page = urllib2.urlopen(www).read()
-    except:
-        print 'Can`t open site. Check your internet connection or try later.'
+    rIPS = requests.get(www, params=searchIPS)
+    rPS = requests.get(www, params=searchPS)
 
-    passcodes = collect(page)
-    passcodes = [element.lower() for element in passcodes]
-    passcodes = list(set(passcodes))
-    return passcodes
+    data = rIPS.json()['items']
+    data.extend(rPS.json()['items'])
+
+    return data
 
 
 def postToIntel(passcode):
     "Post passcode to ingress intel"
 
-    www = 'https://www.ingress.com/intel'
+    www = 'http://www.ingress.com/rpc/dashboard.redeemReward'
 
-    #Splinter browser
-    browser = Browser()
-    try:
-        browser.visit(www)
-        browser.click_link_by_text('Log in')
-        browser.fill('Email', email)
-        browser.fill('Passwd', password)
-        button = browser.find_by_name('signIn')
-        button.click()
+    r = requests.post(www, data='{"passcode": "%s", "method":"dashboard.redeemReward"}' % passcode,
+                      headers={
+                      'Cookie': cookie,
+                      'X-Requested-With': 'XMLHttpRequest',
+                      'X-CSRFToken': csrftoken,
+                      })
 
-        idbox = browser.find_by_xpath('''id('passcode')''').first
-        browser.execute_script("$('#redeem_reward').addClass('show_box')")
-        idbox.fill(passcode)
-
-        button = browser.find_by_value('Input passcode')
-        button.click()
-    except:
-        browser.quit()
-
-    return 1
+    return r.text
 
 if __name__ == '__main__':
 
-    print 'First parse.'
+    print 'Run time UTC0 - ' + str(datetime.datetime.now())
     print 'Waiting for new passcodes...'
 
-    if password == '' or email == '':
-        print 'Enter password!'
-        raise SystemExit()
+    deltaTimeRegion = datetime.timedelta(hours=2)
+    deltaTimePost = datetime.timedelta(minutes=10)
 
-    old = parseDecodeIngress()
+    while True:
+        data = parseGooglePlus()
+        codes = []
 
-    while 1:
-        errorFlag = 0
-        new = parseDecodeIngress()
-        codes = [x for x in new if x not in old]
-        if len(codes) > 0:
-            for code in codes:
-                print 'Accquired new passcode: ' + code
-                try:
-                    postToIntel(code)
-                except:
-                    errorFlag = 1
-                    print 'Something go wrong! Wi`ll try again.'
-
-                if errorFlag == 1:
-                    try:
-                        postToIntel(code)
-                    except:
-                        print 'It`s a kind of magic)'
-                    else:
-                        errorFlag = 0
-        old = new
+        for article in data:
+            date, content = article.values()
+            date = convertTime(date)
+            if (datetime.datetime.now() - date + deltaTimeRegion) < deltaTimePost:
+                codes = collect(content.values()[0])
+                if len(codes) > 0:
+                    for code in codes:
+                        print 'Accquired new passcode: ' + str(code)
+                        print postToIntel(code)
         time.sleep(60)
