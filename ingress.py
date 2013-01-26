@@ -85,8 +85,15 @@ if __name__ == '__main__':
     deltaTimeRegion = datetime.timedelta(hours=2)
     deltaTimePost = datetime.timedelta(minutes=10)
 
+    accquired = []
+
     while True:
-        data = parseGooglePlus()
+
+        try:
+            data = parseGooglePlus()
+        except:
+            print 'Some magic in retrieving. Don`t worry.'
+            data = []
         codes = []
 
         for article in data:
@@ -94,8 +101,14 @@ if __name__ == '__main__':
             date = convertTime(date)
             if (datetime.datetime.now() - date + deltaTimeRegion) < deltaTimePost:
                 codes = collect(content.values()[0])
+
                 if len(codes) > 0:
                     for code in codes:
-                        print 'Accquired new passcode: ' + str(code)
-                        print postToIntel(code)
+                        if code not in accquired:
+                            print 'Accquired passcode: ' + str(code)
+                            try:
+                                print postToIntel(code)
+                                accquired.append(code)
+                            except:
+                                print 'Malfunction. We`ll try again after one minute.'
         time.sleep(60)
