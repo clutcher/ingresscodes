@@ -102,7 +102,7 @@ def postToIntel(passcode):
 
 if __name__ == '__main__':
 
-     if checkInputData():
+    if checkInputData():
 
         print 'Run time UTC0 - ' + str(datetime.datetime.now())
         print 'Waiting for new passcodes...'
