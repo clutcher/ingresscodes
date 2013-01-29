@@ -5,11 +5,11 @@ import datetime
 import time
 import requests
 
-#ACSID cookie
+# ACSID cookie
 acsid = ''
-#csrftoken cookie
+# csrftoken cookie
 csrftoken = ''
-#Google Key API with G+ ON
+# Google Key API with G+ ON
 keyAPI = ''
 
 cookie = 'ACSID=' + acsid + ';' + 'csrftoken=' + csrftoken
@@ -108,7 +108,7 @@ if __name__ == '__main__':
         print 'Waiting for new passcodes...'
 
         deltaTimeRegion = datetime.timedelta(hours=2)
-        deltaTimePost = datetime.timedelta(minutes=10)
+        deltaTimePost = datetime.timedelta(minutes=15)
 
         accquired = []
 
@@ -124,13 +124,15 @@ if __name__ == '__main__':
             for article in data:
                 date, content = article.values()
                 date = convertTime(date)
-                if (datetime.datetime.now() - date + deltaTimeRegion) < deltaTimePost:
+                if (datetime.datetime.now() - date - deltaTimeRegion) < deltaTimePost:
                     codes = collect(content.values()[0])
 
                     if len(codes) > 0:
                         for code in codes:
                             if code not in accquired:
-                                print 'Accquired passcode: ' + str(code)
+                                print 'Time now: ' + str(datetime.datetime.now())
+                                print 'Accquired passcode on: ' + str(code)
+                                print 'Passcode posted on: ' + str(date)
                                 try:
                                     print postToIntel(code)
                                     accquired.append(code)
