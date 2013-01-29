@@ -42,7 +42,7 @@ def collect(htmlSource):
         "[0-9][A-Za-z][A-Za-z][0-9][A-Za-z]*[0-9][A-Za-z][0-9][A-Za-z]")
     passSTypePattern = re.compile("[A-Za-z]*[0-9][0-9][A-Za-z]")
     passTTypePattern = re.compile("82666[0-9]{5,6}")
-    passJTypePattern = re.compile("[A-Z]{10}")
+    passJTypePattern = re.compile("[A-Z0-9]{10}")
 
     passcode.extend(re.findall(passFTypePattern, htmlSource))
     passcode.extend(re.findall(passSTypePattern, htmlSource))
