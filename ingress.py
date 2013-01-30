@@ -16,10 +16,14 @@ cookie = 'ACSID=' + acsid + ';' + 'csrftoken=' + csrftoken
 
 
 def checkInputData():
-    response = postToIntel('test')
-    if response.find('gameBasket'):
-        return 1
-    else:
+    try:
+        response = postToIntel('test')
+
+        if 'gameBasket' in response:
+            return 1
+        else:
+            return 0
+    except:
         return 0
 
 
@@ -55,6 +59,25 @@ def collect(htmlSource):
             passcode = filter(lambda a: a != passOne, passcode)
 
     return passcode
+
+
+def outputGainedThings(output):
+
+    if 'error' in output:
+        print output['error']
+    else:
+        print 'XM: ' + str(output['result']['xmAward'])
+        print 'AP: ' + str(output['result']['apAward'])
+
+        for inv in output['result']['inventoryAward']:
+            # Shields
+            if 'modResource' in inv[2]:
+                print str(inv[2]['modResource']['rarity']) + ' ' + str(inv[2]['modResource']['displayName'])
+            elif 'resourceWithLevels' in inv[2]:
+            # Bursters, emmiters
+                print str(inv[2]['resourceWithLevels']['resourceType']) + ' ' + str(inv[2]['resourceWithLevels']['level']) + 'lvl'
+            else:
+                print inv.text
 
 
 def parseGooglePlus():
@@ -98,13 +121,13 @@ def postToIntel(passcode):
                       'X-CSRFToken': csrftoken,
                       })
 
-    return r.text
+    return r.json()
 
 if __name__ == '__main__':
 
     if checkInputData():
 
-        print 'Run time UTC0 - ' + str(datetime.datetime.now())
+        print 'Run time UTC2 - ' + str(datetime.datetime.now())
         print 'Waiting for new passcodes...'
 
         deltaTimeRegion = datetime.timedelta(hours=2)
@@ -113,7 +136,7 @@ if __name__ == '__main__':
         accquired = []
 
         while True:
-
+            data = parseGooglePlus()
             try:
                 data = parseGooglePlus()
             except:
@@ -132,12 +155,13 @@ if __name__ == '__main__':
                             if code not in accquired:
                                 print 'Time now: ' + str(datetime.datetime.now())
                                 print 'Accquired passcode on: ' + str(code)
-                                print 'Passcode posted on: ' + str(date)
+                                print 'Passcode posted on: ' + str(date + deltaTimeRegion)
                                 try:
-                                    print postToIntel(code)
+                                    gained = postToIntel(code)
+                                    outputGainedThings(gained)
                                     accquired.append(code)
                                 except:
                                     print 'Malfunction. We`ll try again after one minute.'
             time.sleep(60)
     else:
-        print "Invalid cookies."
+        print 'Check your cookies.'
