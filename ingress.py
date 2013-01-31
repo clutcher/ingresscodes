@@ -136,7 +136,7 @@ if __name__ == '__main__':
         accquired = []
 
         while True:
-            data = parseGooglePlus()
+
             try:
                 data = parseGooglePlus()
             except:
